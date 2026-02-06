@@ -208,7 +208,7 @@ const AuthController = {
             res.json({
                 success: true,
                 sessionId: captcha.sessionId,
-                captcha: captcha.captcha
+                captcha: captcha.text
             });
         } catch (error) {
             res.status(500).json({

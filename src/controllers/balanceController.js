@@ -51,23 +51,19 @@ const BalanceController = {
             const commission = amount * (commissionPercentage / 100);
             const netAmount = amount - commission;
 
-            // Start transaction
-            const session = await User.startSession();
-            session.startTransaction();
-
             try {
                 // Update sender balance
                 await User.findByIdAndUpdate(sender._id, {
                     $inc: { balance: -amount }
-                }, { session });
+                });
 
                 // Update receiver balance
                 await User.findByIdAndUpdate(receiver._id, {
                     $inc: { balance: netAmount }
-                }, { session });
+                });
 
                 // Record transaction for sender (debit)
-                await Transaction.create([{
+                await Transaction.create({
                     sender: sender._id,
                     receiver: receiver._id,
                     amount,
@@ -75,10 +71,10 @@ const BalanceController = {
                     description: `Balance transfer to ${receiver.username}`,
                     balanceBefore: sender.balance,
                     balanceAfter: sender.balance - amount
-                }], { session });
+                });
 
                 // Record transaction for receiver (credit)
-                await Transaction.create([{
+                await Transaction.create({
                     sender: sender._id,
                     receiver: receiver._id,
                     amount: netAmount,
@@ -90,7 +86,7 @@ const BalanceController = {
                         amount: commission,
                         percentage: commissionPercentage
                     }
-                }], { session });
+                });
 
                 // If commission > 0, credit to sender's parent if exists
                 if (commission > 0 && sender.parentId) {
@@ -99,9 +95,9 @@ const BalanceController = {
                             balance: commission,
                             commissionEarned: commission
                         }
-                    }, { session });
+                    });
 
-                    await Transaction.create([{
+                    await Transaction.create({
                         sender: sender._id,
                         receiver: sender.parentId,
                         amount: commission,
@@ -109,11 +105,8 @@ const BalanceController = {
                         description: `Commission from transfer to ${receiver.username}`,
                         balanceBefore: sender.parentId.balance,
                         balanceAfter: sender.parentId.balance + commission
-                    }], { session });
+                    });
                 }
-
-                await session.commitTransaction();
-                session.endSession();
 
                 // Emit real-time update
                 req.io.emit('balanceUpdate', {
@@ -131,8 +124,6 @@ const BalanceController = {
                     netAmount
                 });
             } catch (error) {
-                await session.abortTransaction();
-                session.endSession();
                 throw error;
             }
         } catch (error) {
