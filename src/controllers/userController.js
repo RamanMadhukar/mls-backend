@@ -1,8 +1,19 @@
 const User = require('../models/User');
-const Transaction = require('../models/Transaction');
 
-class UserController {
-    async getDownline(req, res) {
+// Helper function - define it outside
+const buildHierarchy = (parentId, users) => {
+    const children = users.filter(user =>
+        user.parentId && user.parentId.toString() === parentId.toString()
+    );
+
+    return children.map(child => ({
+        user: child,
+        children: buildHierarchy(child._id, users)
+    }));
+};
+
+const UserController = {
+    getDownline: async (req, res) => {
         try {
             const user = req.user;
 
@@ -12,7 +23,7 @@ class UserController {
             }).select('-password');
 
             // Organize hierarchy
-            const hierarchy = this.buildHierarchy(user._id, downlineUsers);
+            const hierarchy = buildHierarchy(user._id, downlineUsers);
 
             res.json({
                 success: true,
@@ -25,20 +36,9 @@ class UserController {
                 message: error.message
             });
         }
-    }
+    },
 
-    buildHierarchy(parentId, users) {
-        const children = users.filter(user =>
-            user.parentId && user.parentId.toString() === parentId.toString()
-        );
-
-        return children.map(child => ({
-            user: child,
-            children: this.buildHierarchy(child._id, users)
-        }));
-    }
-
-    async createNextLevelUser(req, res) {
+    createNextLevelUser: async (req, res) => {
         try {
             const { username, email, password } = req.body;
             const parentUser = req.user;
@@ -82,9 +82,9 @@ class UserController {
                 message: error.message
             });
         }
-    }
+    },
 
-    async changePassword(req, res) {
+    changePassword: async (req, res) => {
         try {
             const { userId, newPassword } = req.body;
             const currentUser = req.user;
@@ -121,9 +121,9 @@ class UserController {
                 message: error.message
             });
         }
-    }
+    },
 
-    async getAllUsers(req, res) {
+    getAllUsers: async (req, res) => {
         try {
             const users = await User.find({ role: 'user' })
                 .select('-password')
@@ -140,6 +140,6 @@ class UserController {
             });
         }
     }
-}
+};
 
-module.exports = new UserController();
+module.exports = UserController;

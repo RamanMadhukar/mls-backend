@@ -2,8 +2,8 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const captchaService = require('../services/captcha');
 
-class AuthController {
-    async register(req, res) {
+const AuthController = {
+    register: async (req, res) => {
         try {
             const { username, email, password, role } = req.body;
             const parentId = req.user ? req.user._id : null;
@@ -63,9 +63,9 @@ class AuthController {
                 message: error.message
             });
         }
-    }
+    },
 
-    async login(req, res) {
+    login: async (req, res) => {
         try {
             const { username, password, captcha, sessionId } = req.body;
 
@@ -144,9 +144,9 @@ class AuthController {
                 message: error.message
             });
         }
-    }
+    },
 
-    async refreshToken(req, res) {
+    refreshToken: async (req, res) => {
         try {
             const refreshToken = req.cookies.refreshToken;
 
@@ -191,18 +191,18 @@ class AuthController {
                 message: 'Invalid refresh token'
             });
         }
-    }
+    },
 
-    async logout(req, res) {
+    logout: async (req, res) => {
         res.clearCookie('token');
         res.clearCookie('refreshToken');
         res.json({
             success: true,
             message: 'Logged out successfully'
         });
-    }
+    },
 
-    async getCaptcha(req, res) {
+    getCaptcha: async (req, res) => {
         try {
             const captcha = await captchaService.generateCaptcha();
             res.json({
@@ -217,6 +217,6 @@ class AuthController {
             });
         }
     }
-}
+};
 
-module.exports = new AuthController();
+module.exports = AuthController;

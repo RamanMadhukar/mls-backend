@@ -1,8 +1,22 @@
 const User = require('../models/User');
 const Transaction = require('../models/Transaction');
 
-class BalanceController {
-    async creditBalance(req, res) {
+// Helper function
+const canCreditToUser = (sender, receiver) => {
+    // Admin can credit to anyone
+    if (sender.role === 'admin') return true;
+
+    // Owner can credit to immediate downline
+    if (sender.role === 'owner') {
+        return receiver.parentId && receiver.parentId.toString() === sender._id.toString();
+    }
+
+    // Regular users can only credit to immediate downline
+    return receiver.parentId && receiver.parentId.toString() === sender._id.toString();
+};
+
+const BalanceController = {
+    creditBalance: async (req, res) => {
         try {
             const { receiverId, amount, commissionPercentage = 0 } = req.body;
             const sender = req.user;
@@ -18,7 +32,7 @@ class BalanceController {
             }
 
             // Check if sender can credit to receiver
-            if (!this.canCreditToUser(sender, receiver)) {
+            if (!canCreditToUser(sender, receiver)) {
                 return res.status(403).json({
                     success: false,
                     message: 'Not authorized to credit balance to this user'
@@ -127,22 +141,9 @@ class BalanceController {
                 message: error.message
             });
         }
-    }
+    },
 
-    canCreditToUser(sender, receiver) {
-        // Admin can credit to anyone
-        if (sender.role === 'admin') return true;
-
-        // Owner can credit to immediate downline
-        if (sender.role === 'owner') {
-            return receiver.parentId && receiver.parentId.toString() === sender._id.toString();
-        }
-
-        // Regular users can only credit to immediate downline
-        return receiver.parentId && receiver.parentId.toString() === sender._id.toString();
-    }
-
-    async getTransactionHistory(req, res) {
+    getTransactionHistory: async (req, res) => {
         try {
             const user = req.user;
             const { page = 1, limit = 10, type } = req.query;
@@ -184,9 +185,9 @@ class BalanceController {
                 message: error.message
             });
         }
-    }
+    },
 
-    async selfRecharge(req, res) {
+    selfRecharge: async (req, res) => {
         try {
             const { amount } = req.body;
             const user = req.user;
@@ -224,9 +225,9 @@ class BalanceController {
                 message: error.message
             });
         }
-    }
+    },
 
-    async getBalanceSummary(req, res) {
+    getBalanceSummary: async (req, res) => {
         try {
             const user = req.user;
 
@@ -273,6 +274,6 @@ class BalanceController {
             });
         }
     }
-}
+};
 
-module.exports = new BalanceController();
+module.exports = BalanceController;
